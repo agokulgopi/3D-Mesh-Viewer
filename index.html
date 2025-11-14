@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>3D Mesh Showcase</title>
+
+  <style>
+    :root{
+      --ui-bg: rgba(51,51,51,0.9);
+      --ui-color: #fff;
+      --thumb-size: 84px;
+    }
+
+    html,body{
+      height:100%;
+      margin:0;
+      background:#ffffff;
+      font-family: Arial, sans-serif;
+      overflow:hidden;
+    }
+
+    #container {
+      display: flex;
+      height: 100vh;
+      width: 100vw;
+    }
+
+    /* Sidebar ------------------------------------------------------ */
+    #sidebar {
+      width: 220px;
+      background: #f5f5f5;
+      border-right: 1px solid #ddd;
+      padding: 15px;
+      box-sizing: border-box;
+      overflow-y:auto;
+    }
+
+    .model-btn {
+      display: block;
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 8px;
+      background: #e0e0e0;
+      border: none;
+      cursor: pointer;
+      font-size: 15px;
+      border-radius: 4px;
+      text-align: left;
+    }
+    .model-btn:hover { background: #d0d0d0; }
+
+    /* Viewer ------------------------------------------------------- */
+    #viewer {
+      flex-grow: 1;
+      position: relative; /* important for ui positioning */
+      min-width: 0;
+    }
+
+    canvas { display:block; } /* remove gaps */
+
+    /* UI BUTTONS --------------------------------------------------- */
+    #uiPanel {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      display: flex;
+      gap: 8px;
+      z-index: 20;
+      flex-wrap: wrap; /* allow wrapping so buttons never overflow */
+      max-width: calc(100% - 40px);
+      align-items: center;
+    }
+
+    .ui-btn {
+      padding: 8px 10px;
+      border: none;
+      background: var(--ui-bg);
+      color: var(--ui-color);
+      cursor: pointer;
+      border-radius: 5px;
+      font-size: 13px;
+      opacity: 0.95;
+      white-space: nowrap;
+    }
+    .ui-btn:hover { opacity: 1; }
+
+    /* Loading Screen ----------------------------------------------- */
+    #loadingScreen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(255,255,255,0.9);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      z-index: 2000;
+      font-size: 20px;
+      color: #333;
+    }
+
+    #progressBar {
+      width: 300px;
+      max-width: calc(100% - 40px);
+      height: 12px;
+      background: #ddd;
+      border-radius: 6px;
+      margin-top: 15px;
+      overflow: hidden;
+    }
+
+    #progressFill {
+      width: 0%;
+      height: 100%;
+      background: #44aaff;
+      transition: width 0.2s ease-out;
+    }
+
+    /* Floating thumbnail strip (Feature 7 - Option C) */
+    #thumbStrip {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      bottom: 18px;
+      z-index: 30;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      background: rgba(255,255,255,0.85);
+      padding: 8px 12px;
+      border-radius: 12px;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.15);
+      max-width: calc(100% - 40px);
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .thumb {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      cursor: pointer;
+      width: var(--thumb-size);
+      min-width: var(--thumb-size);
+      gap:6px;
+    }
+    .thumb img {
+      width: var(--thumb-size);
+      height: var(--thumb-size);
+      object-fit: cover;
+      border-radius: 8px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.12);
+      border: 2px solid transparent;
+    }
+    .thumb .label {
+      font-size: 12px;
+      color:#222;
+      max-width: var(--thumb-size);
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+    .thumb.selected img { border-color: #44aaff; transform: scale(0.98); }
+
+    /* Responsive adjustments */
+    @media (max-width: 700px) {
+      #sidebar { display:none; } /* hide sidebar to free space on small screens */
+      :root { --thumb-size: 64px; }
+      .ui-btn { font-size:12px; padding:6px 8px; }
+      #uiPanel { left:12px; right:12px; justify-content:center; }
+    }
+  </style>
+
+  <!-- Import Map -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+
+<body>
+
+<div id="container">
+
+  <!-- Sidebar -->
+  <div id="sidebar">
+    <h3>3D Models</h3>
+    <button class="model-btn" data-model="models/flowervase.glb" data-thumb="thumbnails/flower.jpg">Model 1</button>
+    <button class="model-btn" data-model="models/mobile_phone.glb" data-thumb="thumbnails/phone.jpg">Model 2</button>
+    <button class="model-btn" data-model="models/street_stall.glb" data-thumb="thumbnails/food.jpg">Model 3</button>
+  </div>
+
+  <!-- Loading -->
+  <div id="loadingScreen">
+    <div>Loading model...</div>
+    <div id="progressBar">
+      <div id="progressFill"></div>
+    </div>
+  </div>
+
+  <!-- Viewer -->
+  <div id="viewer">
+
+    <!-- UI Buttons -->
+    <div id="uiPanel">
+      <button class="ui-btn" id="resetBtn">Reset</button>
+      <button class="ui-btn" id="rotateBtn">Auto-Rotate: ON</button>
+      <button class="ui-btn" id="zoomInBtn">Zoom +</button>
+      <button class="ui-btn" id="zoomOutBtn">Zoom -</button>
+      <button class="ui-btn" id="fullscreenBtn">Fullscreen</button>
+    </div>
+
+    <!-- Floating thumbnail strip (Option C) -->
+    <div id="thumbStrip" aria-hidden="false"></div>
+
+  </div>
+
+</div>
+
+<script type="module">
+import * as THREE from "three";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { RGBELoader } from "three/addons/loaders/RGBELoader.js";
+
+// DOM refs used by loader and UI
+const loadingScreen = document.getElementById('loadingScreen');
+const progressFill = document.getElementById('progressFill');
+const thumbStrip = document.getElementById('thumbStrip');
+
+// ------------------------------------------------------
+// Scene / Camera / Renderer
+// ------------------------------------------------------
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xffffff);
+
+const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+camera.position.set(2, 2, 4);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+
+// Physically correct lighting + tone mapping
+renderer.physicallyCorrectLights = true;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.0;
+
+// Shadows
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+document.getElementById('viewer').appendChild(renderer.domElement);
+
+// Controls
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.enablePan = true;
+
+// ------------------------------------------------------
+// Lights + Shadows + Ground
+// ------------------------------------------------------
+const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+dirLight.position.set(5, 10, 5);
+dirLight.castShadow = true;
+dirLight.shadow.bias = -0.0005;
+dirLight.shadow.mapSize.set(2048, 2048);
+dirLight.shadow.camera.near = 0.5;
+dirLight.shadow.camera.far = 50;
+dirLight.shadow.camera.left = -10;
+dirLight.shadow.camera.right = 10;
+dirLight.shadow.camera.top = 10;
+dirLight.shadow.camera.bottom = -10;
+scene.add(dirLight);
+
+scene.add(new THREE.AmbientLight(0xffffff, 0.4));
+
+// Ground
+const groundGeo = new THREE.PlaneGeometry(40, 40);
+const groundMat = new THREE.ShadowMaterial({ opacity: 0.18 });
+const ground = new THREE.Mesh(groundGeo, groundMat);
+ground.rotation.x = -Math.PI / 2;
+ground.position.y = -0.01;
+ground.receiveShadow = true;
+scene.add(ground);
+
+// ------------------------------------------------------
+// HDR Environment
+// ------------------------------------------------------
+const rgbeLoader = new RGBELoader();
+rgbeLoader.load(
+  "https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/studio_small_08_1k.hdr",
+  (hdr) => {
+    hdr.mapping = THREE.EquirectangularReflectionMapping;
+    scene.environment = hdr;
+  },
+  undefined,
+  (err) => { console.warn('HDR load error:', err); }
+);
+
+// ------------------------------------------------------
+// Loader + helpers
+// ------------------------------------------------------
+const gltfLoader = new GLTFLoader();
+let currentModel = null;
+let autoRotate = true;
+
+// Fit model to camera view
+function fitModelToView(object3d, paddingFactor = 1.25) {
+  const box = new THREE.Box3().setFromObject(object3d);
+  const size = new THREE.Vector3();
+  box.getSize(size);
+  const center = new THREE.Vector3();
+  box.getCenter(center);
+
+  // Move to origin first
+  object3d.position.x += (object3d.position.x - center.x);
+  object3d.position.y += (object3d.position.y - center.y);
+  object3d.position.z += (object3d.position.z - center.z);
+
+  // Compute scale to fit inside view frustum
+  const maxDim = Math.max(size.x, size.y, size.z);
+  if (maxDim > 0) {
+    const fov = camera.fov * (Math.PI / 180);
+    const cameraDist = (maxDim * paddingFactor) / (2 * Math.tan(fov / 2));
+    // place camera at appropriate distance along its current direction
+    const dir = new THREE.Vector3().subVectors(camera.position, controls.target).normalize();
+    camera.position.copy(controls.target).addScaledVector(dir, cameraDist);
+    camera.updateProjectionMatrix();
+  }
+
+  // recentre precisely
+  const box2 = new THREE.Box3().setFromObject(object3d);
+  const center2 = new THREE.Vector3();
+  box2.getCenter(center2);
+  object3d.position.sub(center2);
+}
+
+// Load a model path and auto-fit it
+function loadModel(path, markThumb) {
+  if (currentModel) {
+    scene.remove(currentModel);
+    currentModel = null;
+    // allow GC: dispose geometries/materials? could add later
+  }
+
+  loadingScreen.style.display = 'flex';
+  progressFill.style.width = '0%';
+
+  gltfLoader.load(
+    path,
+    (gltf) => {
+      currentModel = gltf.scene;
+      // enable shadows on meshes
+      currentModel.traverse((o) => {
+        if (o.isMesh) {
+          o.castShadow = true;
+          o.receiveShadow = true;
+          // prefer using standard material for PBR reflections if gltf materials exist
+          if (o.material) {
+            o.material.needsUpdate = true;
+            // ensure metalness/roughness respects environment map automatically
+          }
+        }
+      });
+
+      // Auto-fit and add
+      fitModelToView(currentModel, 1.15);
+      scene.add(currentModel);
+
+      loadingScreen.style.display = 'none';
+
+      // visually mark selected thumb if requested
+      if (markThumb) selectThumbByModelPath(path);
+    },
+    (xhr) => {
+      if (xhr.total) {
+        const pct = (xhr.loaded / xhr.total) * 100;
+        progressFill.style.width = pct + '%';
+      }
+    },
+    (err) => {
+      console.error('Model load error', err);
+      loadingScreen.querySelector('div').innerText = 'Error loading model!';
+    }
+  );
+}
+
+// ------------------------------------------------------
+// UI Button logic (Feature 4)
+// ------------------------------------------------------
+document.getElementById('resetBtn').addEventListener('click', () => {
+  // Reset camera and controls target
+  controls.target.set(0, 0, 0);
+  camera.position.set(2, 2, 4);
+  controls.update();
+});
+
+document.getElementById('rotateBtn').addEventListener('click', (e) => {
+  autoRotate = !autoRotate;
+  e.currentTarget.innerText = `Auto-Rotate: ${autoRotate ? 'ON' : 'OFF'}`;
+});
+
+function zoomBy(factor) {
+  // Move camera closer/further from controls.target
+  const dir = new THREE.Vector3().subVectors(camera.position, controls.target);
+  dir.multiplyScalar(1 / factor); // factor >1 zooms in (makes dir smaller)
+  camera.position.copy(controls.target).add(dir);
+  controls.update();
+}
+document.getElementById('zoomInBtn').addEventListener('click', () => zoomBy(1.25));
+document.getElementById('zoomOutBtn').addEventListener('click', () => zoomBy(0.8));
+
+document.getElementById('fullscreenBtn').addEventListener('click', async () => {
+  try {
+    if (!document.fullscreenElement) {
+      await document.documentElement.requestFullscreen();
+    } else {
+      await document.exitFullscreen();
+    }
+  } catch (err) {
+    console.warn('Fullscreen failed:', err);
+  }
+});
+
+// ------------------------------------------------------
+// Thumbnail strip (Feature 7: Option C - floating strip)
+// ------------------------------------------------------
+// We'll populate thumbnails from sidebar entries (so you only manage models in one place)
+const sidebarBtns = Array.from(document.querySelectorAll('.model-btn'));
+
+// Create a list of thumb objects from sidebar data attributes
+const thumbs = sidebarBtns.map(btn => {
+  return {
+    modelPath: btn.getAttribute('data-model'),
+    thumbPath: btn.getAttribute('data-thumb'),
+    label: btn.textContent.trim()
+  };
+});
+
+// Populate the strip
+thumbs.forEach((t, i) => {
+  const node = document.createElement('div');
+  node.className = 'thumb';
+  node.dataset.model = t.modelPath;
+
+  const img = document.createElement('img');
+  img.src = t.thumbPath;
+  img.alt = t.label;
+
+  const label = document.createElement('div');
+  label.className = 'label';
+  label.textContent = t.label;
+
+  node.appendChild(img);
+  node.appendChild(label);
+
+  node.addEventListener('click', () => {
+    loadModel(t.modelPath, true);
+  });
+
+  thumbStrip.appendChild(node);
+});
+
+// Helper: select thumbnail visual by model path
+function selectThumbByModelPath(modelPath) {
+  const nodes = thumbStrip.querySelectorAll('.thumb');
+  nodes.forEach(n => n.classList.toggle('selected', n.dataset.model === modelPath));
+}
+
+// Also wire sidebar buttons to load models & select thumb
+sidebarBtns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    const path = btn.getAttribute('data-model');
+    loadModel(path, true);
+  });
+});
+
+// Pre-select first thumb and load first model by default
+if (thumbs.length > 0) {
+  selectThumbByModelPath(thumbs[0].modelPath);
+  loadModel(thumbs[0].modelPath, true);
+}
+
+// ------------------------------------------------------
+// Animation loop
+// ------------------------------------------------------
+function animate() {
+  requestAnimationFrame(animate);
+  if (currentModel && autoRotate) {
+    currentModel.rotation.y += 0.003;
+  }
+  controls.update();
+  renderer.render(scene, camera);
+}
+animate();
+
+// ------------------------------------------------------
+// Resize handling
+// ------------------------------------------------------
+window.addEventListener('resize', () => {
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+  renderer.setSize(w, h);
+});
+</script>
+</body>
+</html>
