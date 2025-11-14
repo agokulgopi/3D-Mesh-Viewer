@@ -46,11 +46,13 @@
       max-width: 280px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     }
+
     #headerBox h1 {
       margin: 0;
       font-size: 22px;
       font-weight: bold;
     }
+
     #headerBox p {
       margin: 6px 0 0 0;
       line-height: 1.3em;
@@ -84,6 +86,7 @@
       opacity: 0.95;
       white-space: nowrap;
     }
+
     .ui-btn:hover { opacity: 1; }
 
     /* -------------------------------------------------- */
@@ -123,24 +126,25 @@
     }
 
     /* -------------------------------------------------- */
-    /* FLOATING THUMBNAIL STRIP                          */
+    /* THUMBNAIL CAROUSEL (UPDATED for mobile)           */
     /* -------------------------------------------------- */
     #thumbStrip {
       position: absolute;
       left: 50%;
       transform: translateX(-50%);
-      bottom: 18px;
+      bottom: 40px;     /* ⬆ lifted upward for mobile */
       z-index: 30;
       display: flex;
       gap: 10px;
       align-items: center;
-      background: rgba(255,255,255,0.85);
-      padding: 8px 12px;
-      border-radius: 12px;
+      background: rgba(255,255,255,0.9);
+      padding: 10px 14px;
+      border-radius: 14px;
       box-shadow: 0 6px 18px rgba(0,0,0,0.15);
-      max-width: calc(100% - 40px);
+      max-width: calc(100% - 30px);
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
+      backdrop-filter: blur(6px);
     }
 
     .thumb {
@@ -153,14 +157,17 @@
       min-width: var(--thumb-size);
       gap:6px;
     }
+
     .thumb img {
       width: var(--thumb-size);
       height: var(--thumb-size);
       object-fit: cover;
-      border-radius: 8px;
+      border-radius: 10px;
       box-shadow: 0 4px 10px rgba(0,0,0,0.12);
       border: 2px solid transparent;
+      background:#fff;
     }
+
     .thumb .label {
       font-size: 12px;
       color:#222;
@@ -169,24 +176,36 @@
       text-overflow:ellipsis;
       white-space:nowrap;
     }
-    .thumb.selected img { border-color: #44aaff; transform: scale(0.98); }
 
-    /* Responsive */
+    .thumb.selected img {
+      border-color: #44aaff;
+      transform: scale(0.97);
+    }
+
+    /* -------------------------------------------------- */
+    /* MOBILE RESPONSIVE IMPROVEMENTS                    */
+    /* -------------------------------------------------- */
     @media (max-width: 700px) {
       :root { --thumb-size: 64px; }
       .ui-btn { font-size:12px; padding:6px 8px; }
+      #thumbStrip {
+        bottom: 30px;
+        padding: 8px 10px;
+        gap: 8px;
+      }
     }
   </style>
 
-  <!-- Import Map -->
+  <!-- IMPORT MAP -->
   <script type="importmap">
-  {
-    "imports": {
-      "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      }
     }
-  }
   </script>
+
 </head>
 
 <body>
@@ -194,21 +213,18 @@
 <!-- Loading Screen -->
 <div id="loadingScreen">
   <div>Loading model...</div>
-  <div id="progressBar">
-    <div id="progressFill"></div>
-  </div>
+  <div id="progressBar"><div id="progressFill"></div></div>
 </div>
 
-<!-- Main Viewer -->
+<!-- Main 3D Viewer -->
 <div id="viewer">
 
-  <!-- TOP LEFT Heading Box -->
+  <!-- Heading Box -->
   <div id="headerBox">
     <h1>3D Design</h1>
-    <!-- <p>Experience your Custom Wedding Decor Designs in 3D! Our detailed models let you explore your wedding setup from every angle, ensuring every detail is exactly as you envisioned before we bring it to life</p> -->
   </div>
 
-  <!-- UI Buttons -->
+  <!-- UI Controls -->
   <div id="uiPanel">
     <button class="ui-btn" id="resetBtn">Reset</button>
     <button class="ui-btn" id="rotateBtn">Auto-Rotate: ON</button>
@@ -217,12 +233,15 @@
     <button class="ui-btn" id="fullscreenBtn">Fullscreen</button>
   </div>
 
-  <!-- Floating Thumbnail Strip -->
+  <!-- Thumbnail Carousel -->
   <div id="thumbStrip"></div>
 
 </div>
 
 <script type="module">
+/* --------------------------------------------------------------------
+   IMPORTS
+-------------------------------------------------------------------- */
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
@@ -232,67 +251,65 @@ const loadingScreen = document.getElementById('loadingScreen');
 const progressFill = document.getElementById('progressFill');
 const thumbStrip = document.getElementById('thumbStrip');
 
-// -------------------------------------------
-// Scene
-// -------------------------------------------
+/* --------------------------------------------------------------------
+   SCENE SETUP
+-------------------------------------------------------------------- */
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0xffffff);
 
-// Camera
-const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+const camera = new THREE.PerspectiveCamera(
+  60, window.innerWidth / window.innerHeight, 0.1, 1000
+);
 camera.position.set(2, 2, 4);
 
-// Renderer
-const renderer = new THREE.WebGLRenderer({ antialias: true });
+const renderer = new THREE.WebGLRenderer({ antialias:true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.physicallyCorrectLights = true;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.0;
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
 document.getElementById('viewer').appendChild(renderer.domElement);
 
-// Controls
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.enablePan = true;
 
-// Lighting
-const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
-dirLight.position.set(5, 10, 5);
-dirLight.castShadow = true;
-scene.add(dirLight);
+/* Lights */
+const light = new THREE.DirectionalLight(0xffffff, 1.2);
+light.position.set(5,10,5);
+light.castShadow = true;
+scene.add(light);
 
 scene.add(new THREE.AmbientLight(0xffffff, 0.4));
 
-// Ground shadow plane
-const groundGeo = new THREE.PlaneGeometry(40, 40);
-const groundMat = new THREE.ShadowMaterial({ opacity: 0.18 });
-const ground = new THREE.Mesh(groundGeo, groundMat);
-ground.rotation.x = -Math.PI / 2;
-ground.position.y = -0.01;
+/* Ground */
+const ground = new THREE.Mesh(
+  new THREE.PlaneGeometry(40,40),
+  new THREE.ShadowMaterial({ opacity:0.18 })
+);
+ground.rotation.x = -Math.PI/2;
 ground.receiveShadow = true;
 scene.add(ground);
 
-// HDRI Environment
+/* HDRI */
 new RGBELoader().load(
   "https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/studio_small_08_1k.hdr",
-  (hdr) => {
+  (hdr)=>{
     hdr.mapping = THREE.EquirectangularReflectionMapping;
     scene.environment = hdr;
   }
 );
 
-// -------------------------------------------
-// Model Loader
-// -------------------------------------------
+/* --------------------------------------------------------------------
+   MODEL LOADER
+-------------------------------------------------------------------- */
 const gltfLoader = new GLTFLoader();
 let currentModel = null;
 let autoRotate = true;
 
-function fitModelToView(obj, padding = 1.25) {
+function fitModelToView(obj, padding=1.25){
   const box = new THREE.Box3().setFromObject(obj);
   const size = new THREE.Vector3();
   box.getSize(size);
@@ -301,16 +318,16 @@ function fitModelToView(obj, padding = 1.25) {
   box.getCenter(center);
   obj.position.sub(center);
 
-  const maxDim = Math.max(size.x, size.y, size.z);
-  const fov = camera.fov * (Math.PI / 180);
-  const camDist = (maxDim * padding) / (2 * Math.tan(fov / 2));
+  const maxDim = Math.max(size.x,size.y,size.z);
+  const fov = camera.fov * Math.PI/180;
+  const camDist = (maxDim * padding) / (2 * Math.tan(fov/2));
 
   const dir = new THREE.Vector3().subVectors(camera.position, controls.target).normalize();
   camera.position.copy(controls.target).addScaledVector(dir, camDist);
 }
 
-function loadModel(path, markThumb) {
-  if (currentModel) {
+function loadModel(path, mark){
+  if(currentModel){
     scene.remove(currentModel);
     currentModel = null;
   }
@@ -320,118 +337,113 @@ function loadModel(path, markThumb) {
 
   gltfLoader.load(
     path,
-    (gltf) => {
+    (gltf)=>{
       currentModel = gltf.scene;
-
-      currentModel.traverse(o => {
-        if (o.isMesh) {
-          o.castShadow = true;
-          o.receiveShadow = true;
-        }
+      currentModel.traverse(o=>{
+        if(o.isMesh){ o.castShadow=true; o.receiveShadow=true; }
       });
-
-      fitModelToView(currentModel, 1.15);
+      fitModelToView(currentModel,1.15);
       scene.add(currentModel);
       loadingScreen.style.display = "none";
 
-      if (markThumb) selectThumb(path);
+      if(mark) selectThumb(path);
     },
-    (xhr) => {
-      if (xhr.total) {
-        const pct = (xhr.loaded / xhr.total) * 100;
-        progressFill.style.width = pct + "%";
+    (xhr)=>{
+      if(xhr.total){
+        progressFill.style.width = (xhr.loaded/xhr.total)*100 + "%";
       }
     },
-    () => alert("Error loading model")
+    ()=> alert("Error loading model")
   );
 }
 
-// -------------------------------------------
-// UI Buttons
-// -------------------------------------------
-document.getElementById('resetBtn').onclick = () => {
+/* --------------------------------------------------------------------
+   UI BUTTONS
+-------------------------------------------------------------------- */
+resetBtn.onclick = ()=>{
   controls.target.set(0,0,0);
   camera.position.set(2,2,4);
   controls.update();
 };
 
-document.getElementById('rotateBtn').onclick = (e) => {
+rotateBtn.onclick = (e)=>{
   autoRotate = !autoRotate;
-  e.target.innerText = "Auto-Rotate: " + (autoRotate ? "ON" : "OFF");
+  e.target.innerText = "Auto-Rotate: " + (autoRotate?"ON":"OFF");
 };
 
-document.getElementById('zoomInBtn').onclick = () => zoomBy(1.25);
-document.getElementById('zoomOutBtn').onclick = () => zoomBy(0.8);
+zoomInBtn.onclick = ()=> zoomBy(1.25);
+zoomOutBtn.onclick = ()=> zoomBy(0.8);
 
-document.getElementById('fullscreenBtn').onclick = () => {
-  if (!document.fullscreenElement)
+fullscreenBtn.onclick = ()=>{
+  if(!document.fullscreenElement)
     document.documentElement.requestFullscreen();
   else
     document.exitFullscreen();
 };
 
-function zoomBy(f) {
+function zoomBy(f){
   const dir = new THREE.Vector3().subVectors(camera.position, controls.target);
-  dir.multiplyScalar(1 / f);
+  dir.multiplyScalar(1/f);
   camera.position.copy(controls.target).add(dir);
 }
 
-// -------------------------------------------
-// Thumbnails (from your files)
-// -------------------------------------------
+/* --------------------------------------------------------------------
+   THUMBNAILS
+-------------------------------------------------------------------- */
 const models = [
-  { model: "models/flowervase.glb", thumb: "thumbnails/flower.jpg", label: "Model 1" },
-  { model: "models/mobile_phone.glb", thumb: "thumbnails/phone.jpg", label: "Model 2" },
-  { model: "models/street_stall.glb", thumb: "thumbnails/food.jpg", label: "Model 3" },
-  { model: "models/stall.glb", thumb: "thumbnails/food.jpg", label: "Model 4" }
+  { model:"models/flowervase.glb", thumb:"thumbnails/flower.jpg", label:"Model 1" },
+  { model:"models/mobile_phone.glb", thumb:"thumbnails/phone.jpg", label:"Model 2" },
+  { model:"models/street_stall.glb", thumb:"thumbnails/food.jpg", label:"Model 3" },
+  { model:"models/stall.glb",       thumb:"thumbnails/food.jpg", label:"Model 4" }
 ];
 
-models.forEach(item => {
-  const el = document.createElement("div");
-  el.className = "thumb";
-  el.dataset.model = item.model;
+models.forEach(item=>{
+  const wrap = document.createElement("div");
+  wrap.className = "thumb";
+  wrap.dataset.model = item.model;
 
   const img = document.createElement("img");
   img.src = item.thumb;
-  img.alt = item.label;
 
   const label = document.createElement("div");
   label.className = "label";
-  label.textContent = item.label;
+  label.innerText = item.label;
 
-  el.appendChild(img);
-  el.appendChild(label);
-  el.onclick = () => loadModel(item.model, true);
+  wrap.appendChild(img);
+  wrap.appendChild(label);
 
-  thumbStrip.appendChild(el);
+  wrap.onclick = ()=> loadModel(item.model,true);
+
+  thumbStrip.appendChild(wrap);
 });
 
-function selectThumb(modelPath) {
-  document.querySelectorAll(".thumb").forEach(t => {
-    t.classList.toggle("selected", t.dataset.model === modelPath);
+function selectThumb(path){
+  document.querySelectorAll(".thumb").forEach(t=>{
+    t.classList.toggle("selected", t.dataset.model === path);
   });
 }
 
 selectThumb(models[0].model);
 loadModel(models[0].model, true);
 
-// -------------------------------------------
-// Animation loop
-// -------------------------------------------
-function animate() {
+/* --------------------------------------------------------------------
+   ANIMATION LOOP
+-------------------------------------------------------------------- */
+function animate(){
   requestAnimationFrame(animate);
-  if (currentModel && autoRotate) currentModel.rotation.y += 0.003;
+  if(currentModel && autoRotate) currentModel.rotation.y += 0.003;
   controls.update();
-  renderer.render(scene, camera);
+  renderer.render(scene,camera);
 }
 animate();
 
-// Resize
-window.addEventListener('resize', () => {
-  camera.aspect = window.innerWidth / window.innerHeight;
+/* Resize */
+window.addEventListener("resize", ()=>{
+  camera.aspect = window.innerWidth/window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 </script>
+
 </body>
 </html>
