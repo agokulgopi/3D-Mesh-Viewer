@@ -27,7 +27,6 @@
       height: var(--header-height);
       background: #000;
       color: #fff;
-      border-bottom: 1px solid #222;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -44,35 +43,27 @@
     }
 
     /* Center Title in Header */
-      #header-title {
-        position: absolute;
-        left: 50%;
-        transform: translateX(-50%);
-        font-size: 22px;
-        font-weight: bold;
-        letter-spacing: 1px;
-        color: #fff;
+    #header-title {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 22px;
+      font-weight: bold;
+      letter-spacing: 1px;
+      color: #fff;
 
-        /* Animation */
-        opacity: 0;
-        transform: translateX(-50%) translateY(10px);
-        animation: titleFadeIn 1.2s ease-out forwards;
-      }
+      /* Animation */
+      opacity: 0;
+      transform: translateX(-50%) translateY(10px);
+      animation: titleFadeIn 1.2s ease-out forwards;
+    }
 
-      /* Animation Keyframes */
-      @keyframes titleFadeIn {
-        0% {
-          opacity: 0;
-          transform: translateX(-50%) translateY(14px);
-        }
-        100% {
-          opacity: 1;
-          transform: translateX(-50%) translateY(0px);
-        }
-      }
+    @keyframes titleFadeIn {
+      0% { opacity: 0; transform: translateX(-50%) translateY(14px); }
+      100% { opacity: 1; transform: translateX(-50%) translateY(0px); }
+    }
 
-
-    /* Social icons at the right side of header */
+    /* Icons Right */
     #header-icons {
       display: flex;
       gap: 18px;
@@ -91,9 +82,8 @@
       color: #fff;
       text-decoration: none;
       font-size: 18px;
-      transition: 0.3s ease;
+      transition: 0.3s;
     }
-
     .header-icon:hover {
       background: #333;
       transform: scale(1.15);
@@ -102,7 +92,7 @@
     }
 
     /* ---------------------------------------------------
-       MAIN VIEWER AREA
+       VIEWER AREA
     --------------------------------------------------- */
     #viewer {
       position: absolute;
@@ -116,12 +106,13 @@
 
     canvas { display:block; }
 
-    /* UI BUTTON PANEL */
+    /* UI PANEL */
     #uiPanel {
       position: absolute;
       top: 12px;
       right: 12px;
       display: flex;
+      flex-wrap: wrap;
       gap: 8px;
       z-index: 40;
     }
@@ -148,18 +139,8 @@
       z-index:3000;
       font-size:20px;
     }
-
-    #progressBar {
-      width:300px; height:12px;
-      background:#ddd;
-      border-radius:6px;
-      overflow:hidden;
-      margin-top:15px;
-    }
-    #progressFill {
-      width:0%; height:100%;
-      background:#44aaff;
-    }
+    #progressBar { width:300px; height:12px; background:#ddd; border-radius:6px; overflow:hidden; margin-top:15px; }
+    #progressFill { width:0%; height:100%; background:#44aaff; }
 
     /* THUMB STRIP */
     #thumbStrip {
@@ -178,13 +159,7 @@
       backdrop-filter:blur(6px);
       z-index:40;
     }
-
-    .thumb {
-      width: var(--thumb-size);
-      min-width: var(--thumb-size);
-      text-align:center;
-    }
-
+    .thumb { width: var(--thumb-size); min-width: var(--thumb-size); text-align:center; }
     .thumb img {
       width:100%;
       height:var(--thumb-size);
@@ -193,13 +168,8 @@
       border:2px solid transparent;
       box-shadow:0 4px 10px rgba(0,0,0,0.15);
     }
+    .thumb.selected img { border-color:#44aaff; transform:scale(0.97); }
 
-    .thumb.selected img {
-      border-color:#44aaff;
-      transform:scale(0.97);
-    }
-
-    /* MOBILE */
     @media(max-width:700px){
       :root { --thumb-size:64px; }
     }
@@ -217,9 +187,53 @@
       font-size:18px;
       display:none;
     }
-
     @media(max-width:700px){
       #mobileScrollBtn { display:block; }
+    }
+
+    /* ---------------------------------------------------
+       MODEL INFO POPUP
+    --------------------------------------------------- */
+    #infoPopup {
+      position: fixed;
+      top:0; left:0;
+      width:100vw; height:100vh;
+      background: rgba(0,0,0,0.65);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      z-index:4000;
+      backdrop-filter: blur(4px);
+    }
+
+    #infoContent {
+      background: #fff;
+      color: #222;
+      padding: 24px 30px;
+      width: 90%;
+      max-width: 420px;
+      border-radius: 14px;
+      box-shadow: 0 6px 24px rgba(0,0,0,0.25);
+      position: relative;
+      animation: popupShow 0.35s ease-out;
+    }
+
+    #infoClose {
+      position: absolute;
+      right: 14px;
+      top: 10px;
+      font-size: 28px;
+      cursor: pointer;
+      color: #444;
+      transition: 0.2s;
+    }
+    #infoClose:hover { color:#000; }
+
+    #infoContent h2 { margin:0 0 10px; font-size:22px; color:#111; }
+
+    @keyframes popupShow {
+      0% { opacity:0; transform:scale(0.85); }
+      100% { opacity:1; transform:scale(1); }
     }
 
   </style>
@@ -238,9 +252,7 @@
 
 <!-- HEADER -->
 <header>
-  <img id="logo" src="data:image/png;base64,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" alt="Logo">
-
-  <!-- CENTER: TITLE -->
+  <img id="logo" src="logo.png" alt="Logo">
   <div id="header-title">3D Model Showcase</div>
 
   <div id="header-icons">
@@ -257,10 +269,21 @@
   <div id="progressBar"><div id="progressFill"></div></div>
 </div>
 
+<!-- MODEL INFO POPUP -->
+<div id="infoPopup">
+  <div id="infoContent">
+    <span id="infoClose">×</span>
+    <h2 id="infoTitle">Model Title</h2>
+    <p id="infoDescription">Model description...</p>
+    <div id="infoDetails"></div>
+  </div>
+</div>
+
 <!-- VIEWER -->
 <div id="viewer">
 
   <div id="uiPanel">
+    <button class="ui-btn" id="infoBtn">Info</button>
     <button class="ui-btn" id="resetBtn">Reset</button>
     <button class="ui-btn" id="rotateBtn">Auto-Rotate: ON</button>
     <button class="ui-btn" id="zoomInBtn">Zoom +</button>
@@ -272,7 +295,6 @@
   <div id="mobileScrollBtn">↑</div>
 </div>
 
-<!-- FontAwesome Icons -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
 <!-- JS -->
@@ -286,6 +308,44 @@ const loadingScreen = document.getElementById("loadingScreen");
 const progressFill  = document.getElementById("progressFill");
 const thumbStrip    = document.getElementById("thumbStrip");
 
+/* MODEL INFO DATA */
+const modelInfo = {
+  "models/flowervase.glb": {
+    title: "Flower Vase",
+    description: "A beautifully detailed ceramic flower vase.",
+    details: `
+      <strong>Category:</strong> Home Decor<br>
+      <strong>Material:</strong> Ceramic<br>
+      <strong>Dimensions:</strong> 20cm x 10cm x 10cm
+    `
+  },
+  "models/mobile_phone.glb": {
+    title: "Smartphone",
+    description: "High-poly smartphone model with realistic textures.",
+    details: `
+      <strong>Category:</strong> Electronics<br>
+      <strong>Material:</strong> Glass + Aluminum<br>
+      <strong>Size:</strong> 14cm x 7cm
+    `
+  },
+  "models/street_stall.glb": {
+    title: "Street Food Stall",
+    description: "A detailed street food stall with accessories.",
+    details: `
+      <strong>Category:</strong> Market Stall<br>
+      <strong>Material:</strong> Wood + Steel
+    `
+  },
+  "models/stall.glb": {
+    title: "Market Stall",
+    description: "Classic marketplace stall structure.",
+    details: `
+      <strong>Category:</strong> Retail<br>
+      <strong>Material:</strong> Wood
+    `
+  }
+};
+
 /* SCENE */
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0xffffff);
@@ -294,7 +354,7 @@ const viewer = document.getElementById("viewer");
 const camera = new THREE.PerspectiveCamera(60, viewer.clientWidth/viewer.clientHeight, 0.1, 1000);
 
 /* CLOSER DEFAULT CAMERA */
-camera.position.set(1.6, 1.8, 2.0);  
+camera.position.set(1.6, 1.8, 2.0);
 
 const renderer = new THREE.WebGLRenderer({ antialias:true });
 renderer.setSize(viewer.clientWidth, viewer.clientHeight);
@@ -333,6 +393,7 @@ scene.add(ground);
 const loader = new GLTFLoader();
 let currentModel = null;
 let autoRotate = true;
+let currentModelPath = null;
 
 function fitModelToView(obj){
   const box = new THREE.Box3().setFromObject(obj);
@@ -343,7 +404,7 @@ function fitModelToView(obj){
   obj.position.sub(center);
 
   const maxDim = Math.max(size.x, size.y, size.z);
-  const distance = maxDim * 0.95; // even closer
+  const distance = maxDim * 0.95;
   camera.position.set(distance, distance * 1.1, distance);
 }
 
@@ -352,6 +413,7 @@ function loadModel(path, mark=true){
 
   loadingScreen.style.display="flex";
   progressFill.style.width="0%";
+  currentModelPath = path;
 
   loader.load(
     path,
@@ -369,14 +431,34 @@ function loadModel(path, mark=true){
 }
 
 /* BUTTONS */
-resetBtn.onclick=()=>{
+infoBtn.onclick = () => {
+  const popup = document.getElementById("infoPopup");
+
+  if(currentModelPath && modelInfo[currentModelPath]) {
+    infoTitle.textContent = modelInfo[currentModelPath].title;
+    infoDescription.textContent = modelInfo[currentModelPath].description;
+    infoDetails.innerHTML = modelInfo[currentModelPath].details;
+  }
+
+  popup.style.display = "flex";
+};
+
+infoClose.onclick = () => {
+  document.getElementById("infoPopup").style.display = "none";
+};
+
+document.getElementById("infoPopup").onclick = (e) => {
+  if(e.target.id === "infoPopup") e.target.style.display = "none";
+};
+
+resetBtn.onclick = ()=>{
   camera.position.set(1.6, 1.8, 2.0);
   controls.target.set(0,0,0);
 };
 
-rotateBtn.onclick=e=>{
-  autoRotate=!autoRotate;
-  e.target.innerText="Auto-Rotate: " + (autoRotate?"ON":"OFF");
+rotateBtn.onclick = e=>{
+  autoRotate = !autoRotate;
+  e.target.innerText = "Auto-Rotate: " + (autoRotate ? "ON" : "OFF");
 };
 
 zoomInBtn.onclick=()=> zoomBy(1.2);
