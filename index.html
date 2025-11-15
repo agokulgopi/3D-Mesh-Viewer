@@ -5,74 +5,116 @@
   <title>3D Mesh Showcase</title>
 
   <style>
-    :root{
-      --ui-bg: rgba(51,51,51,0.9);
+    :root {
+      --ui-bg: rgba(51, 51, 51, 0.9);
       --ui-color: #fff;
       --thumb-size: 84px;
+      --header-height: 70px;
     }
 
-    html,body{
-      height:100%;
-      margin:0;
-      background:#ffffff;
+    html, body {
+      margin: 0;
+      height: 100%;
+      background: #ffffff;
       font-family: Arial, sans-serif;
-      overflow:hidden;
     }
 
-    /* -------------------------------------------------- */
-    /* MAIN FULLSCREEN VIEWER AREA                        */
-    /* -------------------------------------------------- */
+    /* ---------------------------------------------------
+       HEADER (BLACK, LOGO LEFT, ICONS RIGHT)
+    --------------------------------------------------- */
+    header {
+      width: 100%;
+      height: var(--header-height);
+      background: #000;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 25px;
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 2000;
+    }
+
+    #logo {
+      height: 50px;
+      width: auto;
+    }
+
+    /* Center Title in Header */
+    #header-title {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 22px;
+      font-weight: bold;
+      letter-spacing: 1px;
+      color: #fff;
+
+      /* Animation */
+      opacity: 0;
+      transform: translateX(-50%) translateY(10px);
+      animation: titleFadeIn 1.2s ease-out forwards;
+    }
+
+    @keyframes titleFadeIn {
+      0% { opacity: 0; transform: translateX(-50%) translateY(14px); }
+      100% { opacity: 1; transform: translateX(-50%) translateY(0px); }
+    }
+
+    /* Icons Right */
+    #header-icons {
+      display: flex;
+      gap: 18px;
+      align-items: center;
+      padding-right: 40px;
+    }
+
+    .header-icon {
+      height: 40px;
+      width: 40px;
+      border-radius: 50%;
+      background: #111;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      text-decoration: none;
+      font-size: 18px;
+      transition: 0.3s;
+    }
+    .header-icon:hover {
+      background: #333;
+      transform: scale(1.15);
+      color: #44aaff;
+      box-shadow: 0 0 10px #44aaff;
+    }
+
+    /* ---------------------------------------------------
+       VIEWER AREA
+    --------------------------------------------------- */
     #viewer {
-      width: 100vw;
-      height: 100vh;
-      position: relative;
-      min-width: 0;
+      position: absolute;
+      top: var(--header-height);
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      overflow: hidden;
+      background:#fff;
     }
 
     canvas { display:block; }
 
-    /* -------------------------------------------------- */
-    /* TOP LEFT TITLE + DESCRIPTION                       */
-    /* -------------------------------------------------- */
-    #headerBox {
-      position: absolute;
-      top: 12px;
-      left: 12px;
-      z-index: 30;
-      color: #000;
-      background: rgba(255,255,255,0.85);
-      padding: 12px 16px;
-      border-radius: 10px;
-      max-width: 280px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    }
-
-    #headerBox h1 {
-      margin: 0;
-      font-size: 22px;
-      font-weight: bold;
-    }
-
-    #headerBox p {
-      margin: 6px 0 0 0;
-      line-height: 1.3em;
-      font-size: 13px;
-      color:#333;
-    }
-
-    /* -------------------------------------------------- */
-    /* UI BUTTONS                                         */
-    /* -------------------------------------------------- */
+    /* UI PANEL */
     #uiPanel {
       position: absolute;
       top: 12px;
       right: 12px;
       display: flex;
+      flex-wrap: wrap;
       gap: 8px;
       z-index: 40;
-      flex-wrap: wrap;
-      max-width: calc(100% - 40px);
-      align-items: center;
     }
 
     .ui-btn {
@@ -80,123 +122,122 @@
       border: none;
       background: var(--ui-bg);
       color: var(--ui-color);
-      cursor: pointer;
       border-radius: 5px;
-      font-size: 13px;
-      opacity: 0.95;
-      white-space: nowrap;
+      cursor: pointer;
     }
 
-    .ui-btn:hover { opacity: 1; }
-
-    /* -------------------------------------------------- */
-    /* LOADING SCREEN                                     */
-    /* -------------------------------------------------- */
+    /* LOADING SCREEN */
     #loadingScreen {
       position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      background: rgba(255,255,255,0.9);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-direction: column;
-      z-index: 2000;
-      font-size: 20px;
-      color: #333;
+      top:0; left:0;
+      width:100vw; height:100vh;
+      background: rgba(255,255,255,0.95);
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      z-index:3000;
+      font-size:20px;
     }
+    #progressBar { width:300px; height:12px; background:#ddd; border-radius:6px; overflow:hidden; margin-top:15px; }
+    #progressFill { width:0%; height:100%; background:#44aaff; }
 
-    #progressBar {
-      width: 300px;
-      max-width: calc(100% - 40px);
-      height: 12px;
-      background: #ddd;
-      border-radius: 6px;
-      margin-top: 15px;
-      overflow: hidden;
-    }
-
-    #progressFill {
-      width: 0%;
-      height: 100%;
-      background: #44aaff;
-      transition: width 0.2s ease-out;
-    }
-
-    /* -------------------------------------------------- */
-    /* THUMBNAIL CAROUSEL (UPDATED for mobile)           */
-    /* -------------------------------------------------- */
+    /* THUMB STRIP */
     #thumbStrip {
-      position: absolute;
-      left: 50%;
-      transform: translateX(-50%);
-      bottom: 40px;     /* ⬆ lifted upward for mobile */
-      z-index: 30;
-      display: flex;
-      gap: 10px;
-      align-items: center;
-      background: rgba(255,255,255,0.9);
-      padding: 10px 14px;
-      border-radius: 14px;
-      box-shadow: 0 6px 18px rgba(0,0,0,0.15);
-      max-width: calc(100% - 30px);
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-      backdrop-filter: blur(6px);
+      position:absolute;
+      left:50%;
+      transform:translateX(-50%);
+      bottom: 40px;
+      display:flex;
+      gap:10px;
+      padding:10px 14px;
+      background:rgba(255,255,255,0.85);
+      border-radius:14px;
+      max-width:calc(100% - 30px);
+      overflow-x:auto;
+      -webkit-overflow-scrolling:touch;
+      backdrop-filter:blur(6px);
+      z-index:40;
     }
-
-    .thumb {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      text-align: center;
-      cursor: pointer;
-      width: var(--thumb-size);
-      min-width: var(--thumb-size);
-      gap:6px;
-    }
-
+    .thumb { width: var(--thumb-size); min-width: var(--thumb-size); text-align:center; }
     .thumb img {
-      width: var(--thumb-size);
-      height: var(--thumb-size);
+      width:100%;
+      height:var(--thumb-size);
       object-fit: cover;
-      border-radius: 10px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.12);
-      border: 2px solid transparent;
-      background:#fff;
+      border-radius:10px;
+      border:2px solid transparent;
+      box-shadow:0 4px 10px rgba(0,0,0,0.15);
+    }
+    .thumb.selected img { border-color:#44aaff; transform:scale(0.97); }
+
+    @media(max-width:700px){
+      :root { --thumb-size:64px; }
     }
 
-    .thumb .label {
-      font-size: 12px;
-      color:#222;
-      max-width: var(--thumb-size);
-      overflow:hidden;
-      text-overflow:ellipsis;
-      white-space:nowrap;
+    /* MOBILE SCROLL BUTTON */
+    #mobileScrollBtn {
+      position:absolute;
+      right:20px;
+      bottom:140px;
+      z-index:60;
+      background:#333;
+      color:#fff;
+      padding:12px;
+      border-radius:50%;
+      font-size:18px;
+      display:none;
+    }
+    @media(max-width:700px){
+      #mobileScrollBtn { display:block; }
     }
 
-    .thumb.selected img {
-      border-color: #44aaff;
-      transform: scale(0.97);
+    /* ---------------------------------------------------
+       MODEL INFO POPUP
+    --------------------------------------------------- */
+    #infoPopup {
+      position: fixed;
+      top:0; left:0;
+      width:100vw; height:100vh;
+      background: rgba(0,0,0,0.65);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      z-index:4000;
+      backdrop-filter: blur(4px);
     }
 
-    /* -------------------------------------------------- */
-    /* MOBILE RESPONSIVE IMPROVEMENTS                    */
-    /* -------------------------------------------------- */
-    @media (max-width: 700px) {
-      :root { --thumb-size: 64px; }
-      .ui-btn { font-size:12px; padding:6px 8px; }
-      #thumbStrip {
-        bottom: 30px;
-        padding: 8px 10px;
-        gap: 8px;
-      }
+    #infoContent {
+      background: #fff;
+      color: #222;
+      padding: 24px 30px;
+      width: 90%;
+      max-width: 420px;
+      border-radius: 14px;
+      box-shadow: 0 6px 24px rgba(0,0,0,0.25);
+      position: relative;
+      animation: popupShow 0.35s ease-out;
     }
+
+    #infoClose {
+      position: absolute;
+      right: 14px;
+      top: 10px;
+      font-size: 28px;
+      cursor: pointer;
+      color: #444;
+      transition: 0.2s;
+    }
+    #infoClose:hover { color:#000; }
+
+    #infoContent h2 { margin:0 0 10px; font-size:22px; color:#111; }
+
+    @keyframes popupShow {
+      0% { opacity:0; transform:scale(0.85); }
+      100% { opacity:1; transform:scale(1); }
+    }
+
   </style>
 
-  <!-- IMPORT MAP -->
   <script type="importmap">
     {
       "imports": {
@@ -205,27 +246,44 @@
       }
     }
   </script>
-
 </head>
 
 <body>
 
-<!-- Loading Screen -->
+<!-- HEADER -->
+<header>
+  <img id="logo" src="data:image/png;base64,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" alt="Logo">
+  <div id="header-title">3D Model Showcase</div>
+
+  <div id="header-icons">
+    <a href="#" class="header-icon"><i class="fab fa-instagram"></i></a>
+    <a href="#" class="header-icon"><i class="fab fa-facebook-f"></i></a>
+    <a href="#" class="header-icon"><i class="fab fa-linkedin-in"></i></a>
+    <a href="#" class="header-icon"><i class="fab fa-youtube"></i></a>
+  </div>
+</header>
+
+<!-- LOADING -->
 <div id="loadingScreen">
-  <div>Loading model...</div>
+  <div>Loading Model...</div>
   <div id="progressBar"><div id="progressFill"></div></div>
 </div>
 
-<!-- Main 3D Viewer -->
+<!-- MODEL INFO POPUP -->
+<div id="infoPopup">
+  <div id="infoContent">
+    <span id="infoClose">×</span>
+    <h2 id="infoTitle">Model Title</h2>
+    <p id="infoDescription">Model description...</p>
+    <div id="infoDetails"></div>
+  </div>
+</div>
+
+<!-- VIEWER -->
 <div id="viewer">
 
-  <!-- Heading Box -->
-  <div id="headerBox">
-    <h1>3D Design</h1>
-  </div>
-
-  <!-- UI Controls -->
   <div id="uiPanel">
+    <button class="ui-btn" id="infoBtn">Info</button>
     <button class="ui-btn" id="resetBtn">Reset</button>
     <button class="ui-btn" id="rotateBtn">Auto-Rotate: ON</button>
     <button class="ui-btn" id="zoomInBtn">Zoom +</button>
@@ -233,153 +291,178 @@
     <button class="ui-btn" id="fullscreenBtn">Fullscreen</button>
   </div>
 
-  <!-- Thumbnail Carousel -->
   <div id="thumbStrip"></div>
-
+  <div id="mobileScrollBtn">↑</div>
 </div>
 
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+<!-- JS -->
 <script type="module">
-/* --------------------------------------------------------------------
-   IMPORTS
--------------------------------------------------------------------- */
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { RGBELoader } from "three/addons/loaders/RGBELoader.js";
 
-const loadingScreen = document.getElementById('loadingScreen');
-const progressFill = document.getElementById('progressFill');
-const thumbStrip = document.getElementById('thumbStrip');
+const loadingScreen = document.getElementById("loadingScreen");
+const progressFill  = document.getElementById("progressFill");
+const thumbStrip    = document.getElementById("thumbStrip");
 
-/* --------------------------------------------------------------------
-   SCENE SETUP
--------------------------------------------------------------------- */
+/* MODEL INFO DATA */
+const modelInfo = {
+  "models/flowervase.glb": {
+    title: "Flower Vase",
+    description: "A beautifully detailed ceramic flower vase.",
+    details: `
+      <strong>Category:</strong> Home Decor<br>
+      <strong>Material:</strong> Ceramic<br>
+      <strong>Dimensions:</strong> 20cm x 10cm x 10cm
+    `
+  },
+  "models/mobile_phone.glb": {
+    title: "Smartphone",
+    description: "High-poly smartphone model with realistic textures.",
+    details: `
+      <strong>Category:</strong> Electronics<br>
+      <strong>Material:</strong> Glass + Aluminum<br>
+      <strong>Size:</strong> 14cm x 7cm
+    `
+  },
+  "models/street_stall.glb": {
+    title: "Street Food Stall",
+    description: "A detailed street food stall with accessories.",
+    details: `
+      <strong>Category:</strong> Market Stall<br>
+      <strong>Material:</strong> Wood + Steel
+    `
+  },
+  "models/stall.glb": {
+    title: "Market Stall",
+    description: "Classic marketplace stall structure.",
+    details: `
+      <strong>Category:</strong> Retail<br>
+      <strong>Material:</strong> Wood
+    `
+  }
+};
+
+/* SCENE */
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0xffffff);
 
-const camera = new THREE.PerspectiveCamera(
-  60, window.innerWidth / window.innerHeight, 0.1, 1000
-);
-camera.position.set(2, 2, 4);
+const viewer = document.getElementById("viewer");
+const camera = new THREE.PerspectiveCamera(60, viewer.clientWidth/viewer.clientHeight, 0.1, 1000);
+
+/* CLOSER DEFAULT CAMERA */
+camera.position.set(1.6, 1.8, 2.0);
 
 const renderer = new THREE.WebGLRenderer({ antialias:true });
-renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.physicallyCorrectLights = true;
-renderer.outputColorSpace = THREE.SRGBColorSpace;
-renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.setSize(viewer.clientWidth, viewer.clientHeight);
 renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+viewer.appendChild(renderer.domElement);
 
-document.getElementById('viewer').appendChild(renderer.domElement);
-
+/* CONTROLS */
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
-controls.enablePan = true;
 
-/* Lights */
-const light = new THREE.DirectionalLight(0xffffff, 1.2);
-light.position.set(5,10,5);
-light.castShadow = true;
-scene.add(light);
-
-scene.add(new THREE.AmbientLight(0xffffff, 0.4));
-
-/* Ground */
-const ground = new THREE.Mesh(
-  new THREE.PlaneGeometry(40,40),
-  new THREE.ShadowMaterial({ opacity:0.18 })
-);
-ground.rotation.x = -Math.PI/2;
-ground.receiveShadow = true;
-scene.add(ground);
+/* LIGHTS */
+scene.add(new THREE.AmbientLight(0xffffff,0.55));
+const d = new THREE.DirectionalLight(0xffffff,1.2);
+d.position.set(4,8,6);
+d.castShadow = true;
+scene.add(d);
 
 /* HDRI */
 new RGBELoader().load(
   "https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/studio_small_08_1k.hdr",
-  (hdr)=>{
+  hdr=>{
     hdr.mapping = THREE.EquirectangularReflectionMapping;
     scene.environment = hdr;
   }
 );
 
-/* --------------------------------------------------------------------
-   MODEL LOADER
--------------------------------------------------------------------- */
-const gltfLoader = new GLTFLoader();
+/* GROUND */
+const ground = new THREE.Mesh(
+  new THREE.PlaneGeometry(40,40),
+  new THREE.ShadowMaterial({ opacity:0.18 })
+);
+ground.rotation.x = -Math.PI/2;
+scene.add(ground);
+
+/* MODEL LOADER */
+const loader = new GLTFLoader();
 let currentModel = null;
 let autoRotate = true;
+let currentModelPath = null;
 
-function fitModelToView(obj, padding=1.25){
+function fitModelToView(obj){
   const box = new THREE.Box3().setFromObject(obj);
   const size = new THREE.Vector3();
-  box.getSize(size);
-
   const center = new THREE.Vector3();
   box.getCenter(center);
+  box.getSize(size);
   obj.position.sub(center);
 
-  const maxDim = Math.max(size.x,size.y,size.z);
-  const fov = camera.fov * Math.PI/180;
-  const camDist = (maxDim * padding) / (2 * Math.tan(fov/2));
-
-  const dir = new THREE.Vector3().subVectors(camera.position, controls.target).normalize();
-  camera.position.copy(controls.target).addScaledVector(dir, camDist);
+  const maxDim = Math.max(size.x, size.y, size.z);
+  const distance = maxDim * 0.95;
+  camera.position.set(distance, distance * 1.1, distance);
 }
 
-function loadModel(path, mark){
-  if(currentModel){
-    scene.remove(currentModel);
-    currentModel = null;
-  }
+function loadModel(path, mark=true){
+  if(currentModel) scene.remove(currentModel);
 
-  loadingScreen.style.display = "flex";
-  progressFill.style.width = "0%";
+  loadingScreen.style.display="flex";
+  progressFill.style.width="0%";
+  currentModelPath = path;
 
-  gltfLoader.load(
+  loader.load(
     path,
-    (gltf)=>{
+    gltf=>{
       currentModel = gltf.scene;
-      currentModel.traverse(o=>{
-        if(o.isMesh){ o.castShadow=true; o.receiveShadow=true; }
-      });
-      fitModelToView(currentModel,1.15);
+      currentModel.traverse(o=>{ if(o.isMesh) o.castShadow = true; });
+      fitModelToView(currentModel);
       scene.add(currentModel);
-      loadingScreen.style.display = "none";
 
+      loadingScreen.style.display="none";
       if(mark) selectThumb(path);
     },
-    (xhr)=>{
-      if(xhr.total){
-        progressFill.style.width = (xhr.loaded/xhr.total)*100 + "%";
-      }
-    },
-    ()=> alert("Error loading model")
+    xhr=> progressFill.style.width = (xhr.loaded/xhr.total)*100 + "%"
   );
 }
 
-/* --------------------------------------------------------------------
-   UI BUTTONS
--------------------------------------------------------------------- */
+/* BUTTONS */
+infoBtn.onclick = () => {
+  const popup = document.getElementById("infoPopup");
+
+  if(currentModelPath && modelInfo[currentModelPath]) {
+    infoTitle.textContent = modelInfo[currentModelPath].title;
+    infoDescription.textContent = modelInfo[currentModelPath].description;
+    infoDetails.innerHTML = modelInfo[currentModelPath].details;
+  }
+
+  popup.style.display = "flex";
+};
+
+infoClose.onclick = () => {
+  document.getElementById("infoPopup").style.display = "none";
+};
+
+document.getElementById("infoPopup").onclick = (e) => {
+  if(e.target.id === "infoPopup") e.target.style.display = "none";
+};
+
 resetBtn.onclick = ()=>{
+  camera.position.set(1.6, 1.8, 2.0);
   controls.target.set(0,0,0);
-  camera.position.set(2,2,4);
-  controls.update();
 };
 
-rotateBtn.onclick = (e)=>{
+rotateBtn.onclick = e=>{
   autoRotate = !autoRotate;
-  e.target.innerText = "Auto-Rotate: " + (autoRotate?"ON":"OFF");
+  e.target.innerText = "Auto-Rotate: " + (autoRotate ? "ON" : "OFF");
 };
 
-zoomInBtn.onclick = ()=> zoomBy(1.25);
-zoomOutBtn.onclick = ()=> zoomBy(0.8);
-
-fullscreenBtn.onclick = ()=>{
-  if(!document.fullscreenElement)
-    document.documentElement.requestFullscreen();
-  else
-    document.exitFullscreen();
-};
+zoomInBtn.onclick=()=> zoomBy(1.2);
+zoomOutBtn.onclick=()=> zoomBy(0.8);
 
 function zoomBy(f){
   const dir = new THREE.Vector3().subVectors(camera.position, controls.target);
@@ -387,48 +470,59 @@ function zoomBy(f){
   camera.position.copy(controls.target).add(dir);
 }
 
-/* --------------------------------------------------------------------
-   THUMBNAILS
--------------------------------------------------------------------- */
+fullscreenBtn.onclick=()=>{
+  if(!document.fullscreenElement) document.documentElement.requestFullscreen();
+  else document.exitFullscreen();
+};
+
+/* THUMBNAILS */
 const models = [
-  { model:"models/flowervase.glb", thumb:"thumbnails/flower.jpg", label:"Model 1" },
-  { model:"models/mobile_phone.glb", thumb:"thumbnails/phone.jpg", label:"Model 2" },
-  { model:"models/street_stall.glb", thumb:"thumbnails/food.jpg", label:"Model 3" },
-  { model:"models/stall.glb",       thumb:"thumbnails/food.jpg", label:"Model 4" }
+  { model:"models/flowervase.glb", thumb:"thumbnails/flower.jpg", label:"Vase" },
+  { model:"models/mobile_phone.glb", thumb:"thumbnails/phone.jpg", label:"Phone" },
+  { model:"models/street_stall.glb", thumb:"thumbnails/food.jpg", label:"Stall" },
+  { model:"models/stall.glb",       thumb:"thumbnails/food.jpg", label:"Stall 2" }
 ];
 
 models.forEach(item=>{
   const wrap = document.createElement("div");
-  wrap.className = "thumb";
-  wrap.dataset.model = item.model;
+  wrap.className="thumb";
+  wrap.dataset.model=item.model;
 
-  const img = document.createElement("img");
-  img.src = item.thumb;
+  wrap.innerHTML=`
+    <img src="${item.thumb}">
+    <div class="label">${item.label}</div>
+  `;
 
-  const label = document.createElement("div");
-  label.className = "label";
-  label.innerText = item.label;
-
-  wrap.appendChild(img);
-  wrap.appendChild(label);
-
-  wrap.onclick = ()=> loadModel(item.model,true);
-
+  wrap.onclick=()=> loadModel(item.model,true);
   thumbStrip.appendChild(wrap);
 });
 
 function selectThumb(path){
   document.querySelectorAll(".thumb").forEach(t=>{
-    t.classList.toggle("selected", t.dataset.model === path);
+    t.classList.toggle("selected", t.dataset.model===path);
   });
 }
 
 selectThumb(models[0].model);
-loadModel(models[0].model, true);
+loadModel(models[0].model);
 
-/* --------------------------------------------------------------------
-   ANIMATION LOOP
--------------------------------------------------------------------- */
+/* MOBILE SCROLL BUTTON */
+const scrollBtn = document.getElementById("mobileScrollBtn");
+let raised=false;
+
+scrollBtn.onclick=()=>{
+  if(!raised){
+    thumbStrip.style.bottom="130px";
+    scrollBtn.innerHTML="↓";
+    raised=true;
+  } else {
+    thumbStrip.style.bottom="40px";
+    scrollBtn.innerHTML="↑";
+    raised=false;
+  }
+};
+
+/* ANIMATE */
 function animate(){
   requestAnimationFrame(animate);
   if(currentModel && autoRotate) currentModel.rotation.y += 0.003;
@@ -437,11 +531,11 @@ function animate(){
 }
 animate();
 
-/* Resize */
-window.addEventListener("resize", ()=>{
-  camera.aspect = window.innerWidth/window.innerHeight;
+/* RESIZE */
+addEventListener("resize",()=>{
+  renderer.setSize(viewer.clientWidth, viewer.clientHeight);
+  camera.aspect = viewer.clientWidth/viewer.clientHeight;
   camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
 });
 </script>
 
